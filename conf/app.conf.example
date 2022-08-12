@@ -1,0 +1,35 @@
+appname = hdbdown
+httpport = 8080
+runmode = dev
+autorender = false
+copyrequestbody = true
+EnableDocs = true
+
+mysqlhost = "127.0.0.1"
+mysqluser = "yellowDouban"
+mysqlpass = "yellowDouban"
+mysqldbname   = "yellowDoubanDB"
+mysqllifetime = 15
+mysqlidletime = 120
+mysqlmaxconn = 200
+
+redishost = "127.0.0.1"
+redisport = 6379
+redispass = "root"
+redisdb = "1"
+rediskey = "collectionresources:info:queue"
+
+downpath = "/Volumes/data/new"
+downsleep = 120
+downtimeout = 60
+downlimit = 100
+downdomain = "http://49048159.com:8888/"
+
+maxthreads = 50
+
+logdays = 1
+logpath = .
+loglevel = error
+
+ownuser = nginx
+owngroup = nginx

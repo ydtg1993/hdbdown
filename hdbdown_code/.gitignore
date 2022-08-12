@@ -1,0 +1,9 @@
+.DS_Store
+hdbdown
+hdbdown.log
+/.idea
+runtime/logs
+/javbus.com
+/javdb.com
+/www.javlibrary.com
+.env

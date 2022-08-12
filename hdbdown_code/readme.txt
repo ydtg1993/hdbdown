@@ -29,6 +29,3 @@ maxthreads = 300				//线程池最大并发数
 logdays = 1						//日志保留时间（秒）
 logpath = /Users/jack/			//日志目录，以/结尾
 loglevel = error				//日志错误等级，error只记录错误，debug记录调试数据
-
-ownuser = daemon     //创建文件夹时，所有者
-owngroup = daemon    //创建文件夹时，所在组
