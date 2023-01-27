@@ -7,3 +7,4 @@ runtime/logs
 /javdb.com
 /www.javlibrary.com
 .env
+/vendor

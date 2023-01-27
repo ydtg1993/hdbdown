@@ -2,6 +2,8 @@ package models
 
 import (
 	"gorm.io/gorm"
+	"hdbdown/global/orm"
+	"hdbdown/models/base"
 	"time"
 )
 
@@ -15,29 +17,26 @@ import (
 `updated_at` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
 影片导演关联表
 movie_director_associate
- */
+*/
 type MovieDirectorAssociate struct {
-	Id  int `json:"id" bson:"id" gorm:"primarykey"`
+	base.Model
 	Did           int    `json:"did" bson:"did"`
 	Mid           int    `json:"mid" bson:"mid"`
 	Status        int    `json:"status" bson:"status"`
 	AssociateTime string `json:"associate_time" bson:"associate_time"`
-	CreatedAt     string `json:"created_at" bson:"created_at"`
-	UpdatedAt     string `json:"updated_at" bson:"updated_at"`
 }
 
 /**
 指定表名
- */
+*/
 func (MovieDirectorAssociate) TableName() string {
 	return "movie_director_associate"
 }
 
 func (d *MovieDirectorAssociate) Create() (err error) {
-	err = GetGormDb().Create(&d).Error
+	err = orm.Eloquent.Create(&d).Error
 	return
 }
-
 
 func (ma *MovieDirectorAssociate) BeforeCreate(tx *gorm.DB) (err error) {
 	ma.CreatedAt = time.Now().Format("2006-01-02 15:04:05")

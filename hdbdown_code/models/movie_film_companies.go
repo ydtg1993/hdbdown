@@ -2,6 +2,8 @@ package models
 
 import (
 	"gorm.io/gorm"
+	"hdbdown/global/orm"
+	"hdbdown/models/base"
 	"time"
 )
 
@@ -20,20 +22,16 @@ const FilmNameWithIDHash = "film_name_hash"
 movie_film_companies
 */
 type MovieFilmCompanies struct {
-	Id        int    `json:"id" bson:"id" gorm:"primarykey"`
-	Name      string    `json:"name" bson:"name"`
-	MovieSum  int    `json:"movie_sum" bson:"movie_sum"`
-	LikeSum   int    `json:"like_sum" bson:"like_sum"`
-	Status    int    `json:"status" bson:"status"`
-	Oid       int    `json:"oid" bson:"oid"`
-	CreatedAt string `json:"created_at" bson:"created_at"`
-	UpdatedAt string `json:"updated_at" bson:"updated_at"`
+	base.Model
+	Name     string `json:"name" bson:"name"`
+	MovieSum int    `json:"movie_sum" bson:"movie_sum"`
+	LikeSum  int    `json:"like_sum" bson:"like_sum"`
+	Status   int    `json:"status" bson:"status"`
+	Oid      int    `json:"oid" bson:"oid"`
 }
 
-
-
 func (d *MovieFilmCompanies) Create() (err error) {
-	err = GetGormDb().Create(&d).Error
+	err = orm.Eloquent.Create(&d).Error
 	return
 }
 

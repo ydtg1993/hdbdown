@@ -2,6 +2,8 @@ package models
 
 import (
 	"gorm.io/gorm"
+	"hdbdown/global/orm"
+	"hdbdown/models/base"
 	"time"
 )
 
@@ -17,13 +19,11 @@ movie_film_companies_category_associate
 影片片商类别关联表
 */
 type MovieFilmCompaniesCategoryAssociate struct {
-	Id              int    `json:"id" bson:"id" gorm:"primarykey"`
+	base.Model
 	Cid             int    `json:"cid" bson:"cid"`
 	FilmCompaniesId int    `json:"film_companies_id" bson:"film_companies_id"`
 	Status          int    `json:"status" bson:"status"`
 	AssociateTime   string `json:"associate_time" bson:"associate_time"`
-	CreatedAt       string `json:"created_at" bson:"created_at"`
-	UpdatedAt       string `json:"updated_at" bson:"updated_at"`
 }
 
 /**
@@ -42,6 +42,6 @@ func (ma *MovieFilmCompaniesCategoryAssociate) BeforeCreate(tx *gorm.DB) (err er
 }
 
 func (d *MovieFilmCompaniesCategoryAssociate) Create() (err error) {
-	err = GetGormDb().Create(&d).Error
+	err = orm.Eloquent.Create(&d).Error
 	return
 }

@@ -2,6 +2,8 @@ package models
 
 import (
 	"gorm.io/gorm"
+	"hdbdown/global/orm"
+	"hdbdown/models/base"
 	"time"
 )
 
@@ -17,12 +19,10 @@ movie_label_category_associate
 影片标签类别关联表
 */
 type MovieLabelCategoryAssociate struct {
-	Id        int    `json:"id" bson:"id" gorm:"primarykey"`
-	Cid       int    `json:"cid" bson:"cid"`
-	Lid       int    `json:"lid" bson:"lid"`
-	Status    int    `json:"status" bson:"status"`
-	CreatedAt string `json:"created_at" bson:"created_at"`
-	UpdatedAt string `json:"updated_at" bson:"updated_at"`
+	base.Model
+	Cid    int `json:"cid" bson:"cid"`
+	Lid    int `json:"lid" bson:"lid"`
+	Status int `json:"status" bson:"status"`
 }
 
 /**
@@ -33,7 +33,7 @@ func (MovieLabelCategoryAssociate) TableName() string {
 }
 
 func (d *MovieLabelCategoryAssociate) Create() (err error) {
-	err = GetGormDb().Create(&d).Error
+	err = orm.Eloquent.Create(&d).Error
 	return
 }
 

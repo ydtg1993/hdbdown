@@ -2,18 +2,22 @@ package command
 
 import (
 	"fmt"
-	_ "fmt"
 	"github.com/360EntSecGroup-Skylar/excelize"
-	_ "github.com/360EntSecGroup-Skylar/excelize"
 	"github.com/golang-module/carbon"
 	"go.mongodb.org/mongo-driver/bson"
+	"hdbdown/global/orm"
 	"hdbdown/models"
-	"hdbdown/mongo"
-	"hdbdown/rd"
+	"hdbdown/tools/mongo"
+	"hdbdown/tools/rd"
 	"math"
 	"strings"
 	"time"
 )
+
+/**
+脚本说明： 查询 excel 表格中的番号，获取对应的标签，然后写入 excel 表格
+PS： 通过批量写入的方式将标签和番号的关联数据写入 redis ，从而提高最终的处理效率
+*/
 
 const MovieTemporaryList = "movie_temporary_list"
 const RedisKeyWithAllMongo = "redis_key_with_all_mongo"
@@ -34,7 +38,7 @@ func Run() {
 	totalPress := 0
 
 	for index, row := range rows {
-		fmt.Printf("当前行：%d, 总行数:%d \n",index, totalExcel)
+		fmt.Printf("当前行：%d, 总行数:%d \n", index, totalExcel)
 		var fh int
 		if index == 0 {
 			for k, v := range row {
@@ -46,7 +50,7 @@ func Run() {
 		}
 		number := row[fh]
 
-		label , err := rd.HGet(RedisKeyWithAllMongo, number)
+		label, err := rd.HGet(RedisKeyWithAllMongo, number)
 		if err != nil {
 			continue
 		}
@@ -55,12 +59,12 @@ func Run() {
 			continue
 		}
 
-		ro := fmt.Sprintf("E%d", index + 1)
-		f.SetCellValue("qz-0730-2",ro , label)
-		totalPress ++
+		ro := fmt.Sprintf("E%d", index+1)
+		f.SetCellValue("qz-0730-2", ro, label)
+		totalPress++
 	}
 
-	fmt.Printf("处理完成：%d, 总数：%d, 不存在:%d ,总耗时:%d \n",totalPress, totalExcel, totalExcel - totalPress, time.Now().Unix()- startTime.Unix())
+	fmt.Printf("处理完成：%d, 总数：%d, 不存在:%d ,总耗时:%d \n", totalPress, totalExcel, totalExcel-totalPress, time.Now().Unix()-startTime.Unix())
 
 	if err = f.Save(); err != nil {
 		fmt.Println(err)
@@ -83,7 +87,7 @@ func formatLabel(op []string) string {
 	for _, v := range labels {
 		if str == "" {
 			str = v
-		}else {
+		} else {
 			str = fmt.Sprintf("%s,%s", str, v)
 		}
 	}
@@ -91,10 +95,10 @@ func formatLabel(op []string) string {
 	return str
 }
 
-func redisTempSave()  {
+func redisTempSave() {
 	var total int64
 	var pageNum int64 = 1000
-	err := models.GetGormDb().Model(models.TemporaryMovie{}).Count(&total).Error
+	err := orm.Eloquent.Model(models.TemporaryMovie{}).Count(&total).Error
 	if err != nil {
 		panic(err)
 	}
@@ -108,34 +112,34 @@ func redisTempSave()  {
 	var temp models.TemporaryMovie
 	var temps []models.TemporaryMovie
 
-	for i:=0; i < int(pageAll); i ++  {
+	for i := 0; i < int(pageAll); i++ {
 
-		_, lastId ,temps = temp.ListOfAll(lastId, int(pageNum))
+		_, lastId, temps = temp.ListOfAll(lastId, int(pageNum))
 		for _, v := range temps {
-			rd.HSet(MovieTemporaryList, v.Number,  v.DbName)
+			rd.HSet(MovieTemporaryList, v.Number, v.DbName)
 		}
 	}
 }
 
-func redisMongoSave()  {
+func redisMongoSave() {
 	javlist := []string{"javlibrary", "javbus", "javdb"}
 	lastTime := carbon.CreateFromDateTime(2021, 1, 1, 0, 0, 0).ToDateTimeString()
 	for _, dbName := range javlist {
 		var pageNum int64 = 5000
-		_ , total := mongo.Count(dbName, lastTime)
+		_, total := mongo.Count(dbName, lastTime)
 		pageAll := math.Ceil(float64(total) / float64(pageNum))
 
-		for i:=0 ; i < int(pageAll); i ++  {
+		for i := 0; i < int(pageAll); i++ {
 			fmt.Println("数据查询中....")
 			fields := bson.D{
 				{"video_sort", 1},
 				{"uid", 1},
 			}
-			_, lists := mongo.FindWithCondition(dbName, lastTime, int64(i + 1), pageNum, fields)
+			_, lists := mongo.FindWithCondition(dbName, lastTime, int64(i+1), pageNum, fields)
 			//fmt.Println(dbName, i, pageAll)
 			for k, val := range lists {
 				label := formatLabel(val.VideoSortTypeChange())
-				fmt.Println(dbName,k, i, pageAll)
+				fmt.Println(dbName, k, i, pageAll)
 				if label == "" {
 					fmt.Println("数据为空:" + label)
 					continue

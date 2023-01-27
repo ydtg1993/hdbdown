@@ -2,6 +2,8 @@ package models
 
 import (
 	"gorm.io/gorm"
+	"hdbdown/global/orm"
+	"hdbdown/models/base"
 	"time"
 )
 
@@ -28,19 +30,17 @@ temporary_movie
 采集原始数据表
 */
 type TemporaryMovie struct {
-	Id        int    `json:"id" bson:"id" gorm:"primarykey"`
-	Number    string `json:"number" bson:"number"`
-	DbName    string `json:"db_name" bson:"db_name"`
-	Status    int    `json:"status" bson:"status"`
-	IsUpdate  int    `json:"is_update" bson:"is_update"`
-	Ctime     string `json:"ctime" bson:"ctime"`
-	Utime     string `json:"utime" bson:"utime"`
-	CreatedAt string `json:"created_at" bson:"created_at"`
-	UpdatedAt string `json:"updated_at" bson:"updated_at"`
+	base.Model
+	Number   string `json:"number" bson:"number"`
+	DbName   string `json:"db_name" bson:"db_name"`
+	Status   int    `json:"status" bson:"status"`
+	IsUpdate int    `json:"is_update" bson:"is_update"`
+	Ctime    string `json:"ctime" bson:"ctime"`
+	Utime    string `json:"utime" bson:"utime"`
 }
 
 func (d *TemporaryMovie) Create() (err error) {
-	err = GetGormDb().Create(&d).Error
+	err = orm.Eloquent.Create(&d).Error
 	return
 }
 
@@ -70,17 +70,32 @@ func (ma *TemporaryMovie) BeforeUpdate(tx *gorm.DB) (err error) {
 	return
 }
 
-
 func (ma *TemporaryMovie) BeforeSave(tx *gorm.DB) (err error) {
 	ma.UpdatedAt = time.Now().Format("2006-01-02 15:04:05")
 	return
 }
 
+func (ma *TemporaryMovie) GetDataByNumber(number string) (err error) {
+	err = orm.Eloquent.Where("number = ?", number).First(&ma).Error
+	if err != nil && err != gorm.ErrRecordNotFound {
+		return
+	}
+	return
+}
+
 /**
 标记处理完成
- */
+*/
 func (ma *TemporaryMovie) PressSuccess() error {
-	rest := GetGormDb().Model(&ma).Where("id = ?", ma.Id).Update("status", StatusProcessed)
+	rest := orm.Eloquent.Model(&ma).Where("id = ?", ma.Id).Update("status", StatusProcessed)
+	if rest.Error != nil {
+		return rest.Error
+	}
+	return nil
+}
+
+func (ma *TemporaryMovie) IncompleteData() error {
+	rest := orm.Eloquent.Model(&ma).Where("id = ?", ma.Id).Update("status", StatusNotUnusual)
 	if rest.Error != nil {
 		return rest.Error
 	}
@@ -92,7 +107,7 @@ func (ma *TemporaryMovie) PressSuccess() error {
 */
 func (ma *TemporaryMovie) ListOfNotProcessedCount() (err error, total int64) {
 
-	res := GetGormDb().Model(ma).Where("status = ?", StatusNotProcessed).Count(&total)
+	res := orm.Eloquent.Model(ma).Where("status = ?", StatusNotProcessed).Count(&total)
 	if res.Error != nil {
 		err = res.Error
 		return
@@ -105,7 +120,7 @@ func (ma *TemporaryMovie) ListOfNotProcessedCount() (err error, total int64) {
 */
 func (ma *TemporaryMovie) ListOfNotProcessedLastId() (err error, lastId int) {
 	var temp TemporaryMovie
-	res := GetGormDb().Model(ma).Where("status = ?", StatusNotProcessed).Order("id asc").Limit(1).Select([]string{"id"}).Find(&temp)
+	res := orm.Eloquent.Model(ma).Where("status = ?", StatusNotProcessed).Order("id asc").Limit(1).Select([]string{"id"}).Find(&temp)
 	if res.Error != nil {
 		err = res.Error
 		return
@@ -120,9 +135,9 @@ func (ma *TemporaryMovie) ListOfNotProcessedLastId() (err error, lastId int) {
 func (ma *TemporaryMovie) ListOfNotProcessed(lastId int, limit int) (err error, last int, data []*TemporaryMovie) {
 	// select * from temporary_movie where status = 1 and id > lastId order by id asc limit 500
 	if lastId == 0 {
-		err = GetGormDb().Model(ma).Where("status = ?", StatusNotProcessed).Order("id asc").Limit(limit).Find(&data).Error
-	}else {
-		err = GetGormDb().Model(ma).Where("status = ? and id > ?", StatusNotProcessed, lastId).Order("id asc").Limit(limit).Find(&data).Error
+		err = orm.Eloquent.Model(ma).Where("status = ?", StatusNotProcessed).Order("id asc").Limit(limit).Find(&data).Error
+	} else {
+		err = orm.Eloquent.Model(ma).Where("status = ? and id > ?", StatusNotProcessed, lastId).Order("id asc").Limit(limit).Find(&data).Error
 	}
 	if err != nil {
 		return
@@ -136,22 +151,20 @@ func (ma *TemporaryMovie) ListOfNotProcessed(lastId int, limit int) (err error, 
 	return
 }
 
-
 func (ma *TemporaryMovie) ListOfNeedUpdateCount() (err error, total int64) {
-	err = GetGormDb().Model(ma).Where("is_update = ? and status = ?", NeedUpdate, StatusProcessed).Count(&total).Error
+	err = orm.Eloquent.Model(ma).Where("is_update = ? and status = ?", NeedUpdate, StatusProcessed).Count(&total).Error
 	if err != nil {
 		return
 	}
 	return
 }
 
-
 func (ma *TemporaryMovie) ListOfNeedUpdate(lastId int, limit int) (err error, last int, data []*TemporaryMovie) {
 	// select * from temporary_movie where is_update = 2 and id > lastId and status = 2 order by id asc limit 500
 	if lastId == 0 {
-		err = GetGormDb().Model(ma).Where("is_update = ?", NeedUpdate).Order("id asc").Limit(limit).Find(&data).Error
-	}else {
-		err = GetGormDb().Model(ma).Where("is_update = ? and id > ? and status = ?", NeedUpdate, lastId, StatusProcessed).Order("id asc").Limit(limit).Find(&data).Error
+		err = orm.Eloquent.Model(ma).Where("is_update = ?", NeedUpdate).Order("id asc").Limit(limit).Find(&data).Error
+	} else {
+		err = orm.Eloquent.Model(ma).Where("is_update = ? and id > ? and status = ?", NeedUpdate, lastId, StatusProcessed).Order("id asc").Limit(limit).Find(&data).Error
 	}
 
 	if err != nil {
@@ -169,9 +182,9 @@ func (ma *TemporaryMovie) ListOfNeedUpdate(lastId int, limit int) (err error, la
 func (ma *TemporaryMovie) ListOfAll(lastId int, limit int) (err error, last int, data []TemporaryMovie) {
 	// select * from temporary_movie where id > lastId order by id asc limit 500
 	if lastId == 0 {
-		err = GetGormDb().Model(ma).Order("id asc").Limit(limit).Find(&data).Error
-	}else {
-		err = GetGormDb().Model(ma).Where("id > ?", lastId).Order("id asc").Limit(limit).Find(&data).Error
+		err = orm.Eloquent.Model(ma).Order("id asc").Limit(limit).Find(&data).Error
+	} else {
+		err = orm.Eloquent.Model(ma).Where("id > ?", lastId).Order("id asc").Limit(limit).Find(&data).Error
 	}
 	if err != nil {
 		return

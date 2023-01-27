@@ -2,6 +2,8 @@ package models
 
 import (
 	"gorm.io/gorm"
+	"hdbdown/global/orm"
+	"hdbdown/models/base"
 	"time"
 )
 
@@ -20,25 +22,23 @@ const DirectorNameWithIDHash = "director_name_hash"
 movie_director
 */
 type MovieDirector struct {
-	Id  int `json:"id" bson:"id" gorm:"primarykey"`
-	Name      string `json:"name" bson:"name"`
-	MovieSum  int    `json:"movie_sum" bson:"movie_sum"`
-	LikeSum   int    `json:"like_sum" bson:"like_sum"`
-	Status    int    `json:"status" bson:"status"`
-	Oid       int    `json:"oid" bson:"oid"`
-	CreatedAt string `json:"created_at" bson:"created_at"`
-	UpdatedAt string `json:"updated_at" bson:"updated_at"`
+	base.Model
+	Name     string `json:"name" bson:"name"`
+	MovieSum int    `json:"movie_sum" bson:"movie_sum"`
+	LikeSum  int    `json:"like_sum" bson:"like_sum"`
+	Status   int    `json:"status" bson:"status"`
+	Oid      int    `json:"oid" bson:"oid"`
 }
 
 /**
 指定表名
- */
+*/
 func (MovieDirector) TableName() string {
 	return "movie_director"
 }
 
 func (d *MovieDirector) Create() (err error) {
-	err = GetGormDb().Create(&d).Error
+	err = orm.Eloquent.Create(&d).Error
 	return
 }
 
@@ -47,5 +47,3 @@ func (ma *MovieDirector) BeforeCreate(tx *gorm.DB) (err error) {
 	ma.UpdatedAt = time.Now().Format("2006-01-02 15:04:05")
 	return
 }
-
-

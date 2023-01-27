@@ -2,6 +2,8 @@ package models
 
 import (
 	"gorm.io/gorm"
+	"hdbdown/global/orm"
+	"hdbdown/models/base"
 	"time"
 )
 
@@ -17,24 +19,22 @@ import (
 movie_actor_category_associate
 */
 type MovieActorCategoryAssociate struct {
-	Id  int `json:"id" bson:"id" gorm:"primarykey"`
+	base.Model
 	Cid           int    `json:"cid" bson:"cid"`
 	Aid           int    `json:"aid" bson:"aid"`
 	Status        int    `json:"status" bson:"status"`
 	AssociateTime string `json:"associate_time" bson:"associate_time"`
-	CreatedAt     string `json:"created_at" bson:"created_at"`
-	UpdatedAt     string `json:"updated_at" bson:"updated_at"`
 }
 
 /**
 指定表名
- */
+*/
 func (MovieActorCategoryAssociate) TableName() string {
 	return "movie_actor_category_associate"
 }
 
 func (d *MovieActorCategoryAssociate) Create() (err error) {
-	err = GetGormDb().Create(&d).Error
+	err = orm.Eloquent.Create(&d).Error
 	return
 }
 
@@ -43,4 +43,3 @@ func (ma *MovieActorCategoryAssociate) BeforeCreate(tx *gorm.DB) (err error) {
 	ma.UpdatedAt = time.Now().Format("2006-01-02 15:04:05")
 	return
 }
-

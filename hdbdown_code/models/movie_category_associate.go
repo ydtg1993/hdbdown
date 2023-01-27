@@ -2,6 +2,8 @@ package models
 
 import (
 	"gorm.io/gorm"
+	"hdbdown/global/orm"
+	"hdbdown/models/base"
 	"time"
 )
 
@@ -14,26 +16,24 @@ import (
 `created_at` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
 `updated_at` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
 影片类别关联表
- */
+*/
 type MovieCategoryAssociate struct {
-	Id            int    `json:"id" bson:"id" gorm:"primarykey"`
+	base.Model
 	Cid           int    `json:"cid" bson:"cid"`
 	Mid           int    `json:"mid" bson:"mid"`
 	Status        int    `json:"status" bson:"status"`
 	AssociateTime string `json:"associate_time" bson:"associate_time"`
-	CreatedAt     string `json:"created_at" bson:"created_at"`
-	UpdatedAt     string `json:"updated_at" bson:"updated_at"`
 }
 
 /**
 指定表名
- */
+*/
 func (MovieCategoryAssociate) TableName() string {
 	return "movie_category_associate"
 }
 
 func (d *MovieCategoryAssociate) Create() (err error) {
-	err = GetGormDb().Create(&d).Error
+	err = orm.Eloquent.Create(&d).Error
 	return
 }
 

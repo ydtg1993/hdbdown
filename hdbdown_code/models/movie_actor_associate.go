@@ -2,6 +2,8 @@ package models
 
 import (
 	"gorm.io/gorm"
+	"hdbdown/global/orm"
+	"hdbdown/models/base"
 	"time"
 )
 
@@ -16,28 +18,25 @@ movie_actor_associate
 `created_at` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
 `updated_at` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
 */
-type MovieActorAssociate struct{
-	Id int `json:"id" bson:"id" gorm:"primarykey"`
-	Aid int `json:"aid" bson:"aid"`
-	Mid int `json:"mid" bson:"mid"`
-	Status int `json:"status" bson:"status"`
+type MovieActorAssociate struct {
+	base.Model
+	Aid           int    `json:"aid" bson:"aid"`
+	Mid           int    `json:"mid" bson:"mid"`
+	Status        int    `json:"status" bson:"status"`
 	AssociateTime string `json:"associate_time" bson:"associate_time"`
-	CreatedAt     string `json:"created_at" bson:"created_at"`
-	UpdatedAt     string `json:"updated_at" bson:"updated_at"`
 }
 
 /**
 指定表名
- */
+*/
 func (MovieActorAssociate) TableName() string {
 	return "movie_actor_associate"
 }
 
 func (d *MovieActorAssociate) Create() (err error) {
-	err = GetGormDb().Create(&d).Error
+	err = orm.Eloquent.Create(&d).Error
 	return
 }
-
 
 /**
 钩子函数

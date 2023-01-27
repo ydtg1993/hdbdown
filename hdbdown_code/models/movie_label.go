@@ -2,6 +2,8 @@ package models
 
 import (
 	"gorm.io/gorm"
+	"hdbdown/global/orm"
+	"hdbdown/models/base"
 	"time"
 )
 
@@ -22,20 +24,18 @@ movie_label
 影片标签表
 */
 type MovieLabel struct {
-	Id        int    `json:"id" bson:"id" gorm:"primarykey"`
-	Cid       int    `json:"cid" bson:"cid"`
-	Name      string `json:"name" bson:"name"`
-	Status    int    `json:"status" bson:"status"`
-	Oid       int    `json:"oid" bson:"oid"`
-	Sort      int    `json:"sort" bson:"sort"`
-	ItemNum   int    `json:"item_num" bson:"item_num"`
-	LikeSum   int    `json:"like_sum" bson:"like_sum"`
-	CreatedAt string `json:"created_at" bson:"created_at"`
-	UpdatedAt string `json:"updated_at" bson:"updated_at"`
+	base.Model
+	Cid     int    `json:"cid" bson:"cid"`
+	Name    string `json:"name" bson:"name"`
+	Status  int    `json:"status" bson:"status"`
+	Oid     int    `json:"oid" bson:"oid"`
+	Sort    int    `json:"sort" bson:"sort"`
+	ItemNum int    `json:"item_num" bson:"item_num"`
+	LikeSum int    `json:"like_sum" bson:"like_sum"`
 }
 
 func (d *MovieLabel) Create() (err error) {
-	err = GetGormDb().Create(&d).Error
+	err = orm.Eloquent.Create(&d).Error
 	return
 }
 

@@ -2,7 +2,9 @@ package models
 
 import (
 	"gorm.io/gorm"
-	"hdbdown/rd"
+	"hdbdown/global/orm"
+	"hdbdown/models/base"
+	"hdbdown/tools/rd"
 	"time"
 )
 
@@ -26,7 +28,7 @@ const ActorNameWithIDHash = "actor_name_hash"
 movie_actor
 */
 type MovieActor struct {
-	Id             int    `json:"id" bson:"id" gorm:"primarykey"`
+	base.Model
 	Name           string `json:"name" bson:"name"`
 	Photo          string `json:"photo" bson:"photo"`
 	Sex            string `json:"sex" bson:"sex"`
@@ -35,8 +37,6 @@ type MovieActor struct {
 	MovieSum       int    `json:"movie_sum" bson:"movie_sum"`
 	LikeSum        int    `json:"like_sum" bson:"like_sum"`
 	Status         int    `json:"status" bson:"status"`
-	CreatedAt      string `json:"created_at" bson:"created_at"`
-	UpdatedAt      string `json:"updated_at" bson:"updated_at"`
 }
 
 /**
@@ -47,7 +47,7 @@ func (MovieActor) TableName() string {
 }
 
 func (d *MovieActor) Create() (err error) {
-	err = GetGormDb().Create(&d).Error
+	err = orm.Eloquent.Create(&d).Error
 	return
 }
 
@@ -69,5 +69,3 @@ func (ma *MovieActor) AfterCreate(tx *gorm.DB) (err error) {
 	}
 	return
 }
-
-

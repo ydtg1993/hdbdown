@@ -2,6 +2,8 @@ package models
 
 import (
 	"gorm.io/gorm"
+	"hdbdown/global/orm"
+	"hdbdown/models/base"
 	"time"
 )
 
@@ -32,7 +34,7 @@ import (
 movie_comment
 */
 type MovieComment struct {
-	Id           int    `json:"id" bson:"id" gorm:"primarykey"`
+	base.Model
 	Mid          int    `json:"mid" bson:"mid"`
 	Uid          int    `json:"uid" bson:"uid"`
 	Cid          int    `json:"cid" bson:"cid"`
@@ -49,8 +51,6 @@ type MovieComment struct {
 	Like         string `json:"'like'" bson:"'like'"`
 	Dislike      string `json:"dislike" bson:"dislike"`
 	CommentTime  string `json:"comment_time" bson:"comment_time"`
-	CreatedAt    string `json:"created_at" bson:"created_at"`
-	UpdatedAt    string `json:"updated_at" bson:"updated_at"`
 	Audit        string `json:"audit" bson:"audit"`
 	MLike        string `json:"m_like" bson:"m_like"`
 	MDislike     string `json:"m_dislike" bson:"m_dislike"`
@@ -58,13 +58,13 @@ type MovieComment struct {
 
 /**
 指定表名
- */
+*/
 func (MovieComment) TableName() string {
 	return "movie_comment"
 }
 
 func (d *MovieComment) Create() (err error) {
-	err = GetGormDb().Create(&d).Error
+	err = orm.Eloquent.Create(&d).Error
 	return
 }
 
@@ -73,4 +73,3 @@ func (ma *MovieComment) BeforeCreate(tx *gorm.DB) (err error) {
 	ma.UpdatedAt = time.Now().Format("2006-01-02 15:04:05")
 	return
 }
-

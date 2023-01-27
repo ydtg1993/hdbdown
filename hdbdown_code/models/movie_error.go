@@ -3,6 +3,8 @@ package models
 import (
 	"encoding/json"
 	"gorm.io/gorm"
+	"hdbdown/global/orm"
+	"hdbdown/models/base"
 	"time"
 )
 
@@ -23,11 +25,9 @@ CREATE TABLE `movie_error` (
 MovieError
 */
 type MovieError struct {
-	Id        int    `json:"id" bson:"id" gorm:"primarykey"`
-	Mid       int    `json:"mid" bson:"mid"`
-	Message   string `json:"message" bson:"message"`
-	CreatedAt string `json:"created_at" bson:"created_at"`
-	UpdatedAt string `json:"updated_at" bson:"updated_at"`
+	base.Model
+	Mid     int    `json:"mid" bson:"mid"`
+	Message string `json:"message" bson:"message"`
 }
 
 /**
@@ -38,7 +38,7 @@ func (MovieError) TableName() string {
 }
 
 func (d *MovieError) Create() (err error) {
-	err = GetGormDb().Create(&d).Error
+	err = orm.Eloquent.Create(&d).Error
 	return
 }
 
@@ -50,46 +50,24 @@ func (ma *MovieError) BeforeCreate(tx *gorm.DB) (err error) {
 
 func (me *MovieError) Add(Mid int, title string, message string) (err error) {
 
-	if err := GetGormDb().Where("mid =?", Mid).First(&me).Error; err != nil && err != gorm.ErrRecordNotFound {
+	if err := orm.Eloquent.Where("mid =?", Mid).First(&me).Error; err != nil && err != gorm.ErrRecordNotFound {
 		return err
 	}
 	var errs []DownloadError
 
 	if me.Mid == Mid {
-		err = json.Unmarshal([]byte(me.Message), &errs)
-		if err != nil {
-			return
+		if me.Message != "" {
+			err = json.Unmarshal([]byte(me.Message), &errs)
+			if err != nil {
+				return
+			}
 		}
 
 		isHas := false
 		for _, v := range errs {
 			if v.Title == title {
 				isHas = true
-				switch title {
-				case "图片下载错误":
-					var strs []string
-					err = json.Unmarshal([]byte(me.Message), &strs)
-					if err != nil {
-						return err
-					}
-
-					var msgs []string
-					err = json.Unmarshal([]byte(message), &msgs)
-					if err != nil {
-						return err
-					}
-
-					strs = append(strs , msgs...)
-					result, err := json.Marshal(strs)
-					if err != nil {
-						return err
-					}
-					v.Message = string(result)
-					break
-				default:
-					v.Message = message
-					break
-				}
+				v.Message = message
 			}
 		}
 
@@ -108,7 +86,7 @@ func (me *MovieError) Add(Mid int, title string, message string) (err error) {
 
 		me.Message = string(resultError)
 
-		if err := GetGormDb().Model(&me).Where("mid =?", Mid).Update("message", resultError).Error; err != nil {
+		if err := orm.Eloquent.Model(&me).Where("mid =?", Mid).Update("message", resultError).Error; err != nil {
 			return err
 		}
 	} else {

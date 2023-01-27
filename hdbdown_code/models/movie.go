@@ -1,11 +1,13 @@
 package models
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/araddon/dateparse"
-	"github.com/beego/beego/v2/core/logs"
 	"gorm.io/gorm"
-	"hdbdown/rd"
+	"hdbdown/global/orm"
+	"hdbdown/models/base"
+	"hdbdown/tools/rd"
 	"strings"
 	"time"
 )
@@ -53,7 +55,7 @@ movie
   `updated_at` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
 */
 type Movie struct {
-	Id                    int     `json:"id" bson:"id" gorm:"primarykey"`
+	base.Model
 	Number                string  `json:"number" bson:"number"`
 	NumberSource          string  `json:"number_source" bson:"number_source"`
 	Name                  string  `json:"name" bson:"name"`
@@ -87,8 +89,6 @@ type Movie struct {
 	Oid                   int     `json:"oid" bson:"oid"`
 	Cid                   int     `json:"cid" bson:"cid"`
 	Weight                int     `json:"weight" bson:"weight"`
-	CreatedAt             string  `json:"created_at" bson:"created_at"`
-	UpdatedAt             string  `json:"updated_at" bson:"updated_at"`
 	//Magnet []mongo.MagnetMode
 }
 
@@ -100,7 +100,7 @@ func (Movie) TableName() string {
 }
 
 func (m *Movie) AutoSuccess(id int) error {
-	if err := GetGormDb().Where("id =?",id).Updates(Movie{
+	if err := orm.Eloquent.Where("id =?", id).Updates(Movie{
 		StatusAudit: 2,
 		Status:      1,
 		IsUp:        1,
@@ -108,6 +108,29 @@ func (m *Movie) AutoSuccess(id int) error {
 		return err
 	}
 	return nil
+}
+
+func (m *Movie) GetMapList() (err error, pictures []string) {
+	if m.Map == "" {
+		return
+	}
+
+	var pictureMap []map[string]string
+	if err = json.Unmarshal([]byte(m.Map), &pictureMap); err != nil {
+		return
+	}
+
+	for _, v := range pictureMap {
+		if val, ok := v["img"]; ok == true {
+			pictures = append(pictures, val)
+		}
+
+		if val, ok := v["big_img"]; ok == true {
+			pictures = append(pictures, val)
+		}
+	}
+
+	return
 }
 
 /**
@@ -138,7 +161,6 @@ func (m *Movie) BeforeCreate(tx *gorm.DB) (err error) {
 		m.FluxLinkageTime = time.Now().Format("2006-01-02 15:04:05")
 	}
 
-
 	return
 }
 
@@ -153,7 +175,7 @@ func (m *Movie) AfterCreate(tx *gorm.DB) (err error) {
 //Magnet []mongo.MagnetMode
 
 func (m *Movie) FindByNumber(number string) (err error) {
-	res := GetGormDb().Where("number = ?", number).Find(&m)
+	res := orm.Eloquent.Where("number = ?", number).Find(&m)
 	if res.Error != nil && res.Error != gorm.ErrRecordNotFound {
 		err = res.Error
 		return
@@ -161,127 +183,9 @@ func (m *Movie) FindByNumber(number string) (err error) {
 	return
 }
 
-/**
-* 从数据库中读取列表,每次读取10条
-* mid			id
-* updatedAt		最后更新时间
-* limit 		每次读取多少条
- */
-func (d *Movie) Lists(mid, limit int, restart bool, rTime string) (lastid int, res []*Movie) {
-
-	q := `SELECT id,number,small_cover,big_cove,trailer,map
-		FROM movie 
-		where id>? and is_up=1 order by id asc limit %d;`
-
-	if restart == true {
-		q = `SELECT id,number,small_cover,big_cove,trailer,map
-		FROM movie 
-		where id>? and created_at>='` + rTime + `' order by id asc limit %d;`
-	}
-
-	q = fmt.Sprintf(q, limit)
-
-	rows, err := DB.Query(q, mid)
-	if err != nil {
-		logs.Error("sql error->", q, mid, err.Error())
-		return lastid, res
-	}
-	defer rows.Close()
-
-	//扫描数据
-	for rows.Next() {
-		dd := new(Movie)
-		er := rows.Scan(&dd.Id, &dd.Number, &dd.SmallCover, &dd.BigCove, &dd.Trailer, &dd.Map)
-
-		if er != nil {
-			logs.Error("scan row error->", er.Error())
-		}
-
-		lastid = dd.Id
-
-		res = append(res, dd)
-	}
-
-	return lastid, res
-}
-
-/**
-* 总记录数
-* param		restart		是否指定时间重写获取
- */
-func (d *Movie) Total(restart bool, rTime string) int {
-	res := 0
-
-	q := `SELECT count(0) as nums FROM movie where is_up=1; `
-
-	if restart == true {
-		q = `SELECT count(0) as nums FROM movie where created_at >='` + rTime + `'; `
-	}
-
-	row, err := DB.Query(q)
-	if err != nil {
-		logs.Error("sql error->", q, err.Error())
-		return res
-	}
-	defer row.Close()
-
-	if row.Next() == true {
-		row.Scan(&res)
-	}
-	return res
-}
-
-/**
-* 更新数据
-* @param	sId			影片id
-* @param	RStatus 	是否上架,1=上架，2=下架
- */
-func (d *Movie) Save(sId, RStatus string) bool {
-
-	result, err := DB.Exec("update movie set is_up=? where id=? limit 1;", RStatus, sId)
-
-	if err != nil {
-		logs.Error("更新数据库错误！->", err.Error())
-		return false
-	}
-	rows, _ := result.RowsAffected()
-	if rows <= 0 {
-		return false
-	}
-	return true
-}
-
 func (d *Movie) Create() (err error) {
-	if err = GetGormDb().Create(&d).Error; err != nil {
+	if err = orm.Eloquent.Create(&d).Error; err != nil {
 		return
 	}
 	return
-}
-
-/**
-重复性检查
-*/
-func (d *Movie) Exists(number string) bool {
-	var num int
-	var q string
-	q = `select count(1) as n from movie where number =%d`
-
-	q = fmt.Sprintf(q, number)
-	row, err := DB.Query(q)
-	if err != nil {
-		logs.Error("sql error->", q, err.Error())
-		return false
-	}
-
-	defer row.Close()
-
-	if row.Next() == true {
-		row.Scan(&num)
-	}
-
-	if num > 0 {
-		return true
-	}
-
-	return false
 }

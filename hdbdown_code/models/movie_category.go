@@ -3,7 +3,9 @@ package models
 import (
 	"encoding/json"
 	"gorm.io/gorm"
-	"hdbdown/rd"
+	"hdbdown/global/orm"
+	"hdbdown/models/base"
+	"hdbdown/tools/rd"
 	"strings"
 	"time"
 )
@@ -21,12 +23,10 @@ const CategoryList = "category_list"
  `sort` int NOT NULL DEFAULT '0' COMMENT '排序',
 */
 type MovieCategory struct {
-	Id        int    `json:"id" bson:"id" gorm:"primarykey"`
-	Name      string `json:"name" bson:"name"`
-	Status    int    `json:"status" bson:"status"`
-	Oid       string `json:"oid" bson:"oid"`
-	CreatedAt string `json:"createdAt" bson:"createdAt"`
-	UpdatedAt string `json:"UpdatedAt" bson:"UpdatedAt"`
+	base.Model
+	Name   string `json:"name" bson:"name"`
+	Status int    `json:"status" bson:"status"`
+	Oid    string `json:"oid" bson:"oid"`
 }
 
 /**
@@ -38,7 +38,7 @@ func (MovieCategory) TableName() string {
 
 func (d *MovieCategory) FirstByName(name string) (err error) {
 	name = d.SwitchName(name)
-	res := GetGormDb().Where("name = ?", name).First(&d)
+	res := orm.Eloquent.Where("name = ?", name).First(&d)
 	if res.Error != nil && res.Error != gorm.ErrRecordNotFound {
 		err = res.Error
 		return
@@ -65,7 +65,7 @@ func (d *MovieCategory) FindWithRedis() (err error, list []*MovieCategory) {
 
 	data, err := rd.GetCash(CategoryList, func() string {
 
-		if err = GetGormDb().Where("status = ?", 1).Find(&list).Error; err != nil && err != gorm.ErrRecordNotFound {
+		if err = orm.Eloquent.Where("status = ?", 1).Find(&list).Error; err != nil && err != gorm.ErrRecordNotFound {
 			return ""
 		}
 
